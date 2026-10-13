@@ -1,0 +1,21 @@
+{
+  "name": "finops-enterprise-backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "verify:data": "node scripts/verify-data.js",
+    "seed": "node scripts/seed.js"
+  },
+  "dependencies": {
+    "express": "5.1.0",
+    "cors": "2.8.5",
+    "dotenv": "16.6.1"
+  }
+}

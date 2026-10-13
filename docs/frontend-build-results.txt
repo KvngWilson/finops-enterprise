@@ -1,0 +1,14 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> finops-enterprise-frontend@1.0.0 build
+> vite build
+
+vite v7.1.2 building for production...
+transforming...
+✓ 48 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.37 kB │ gzip:  0.28 kB
+dist/assets/index-AEH5jbyo.css    6.99 kB │ gzip:  2.27 kB
+dist/assets/index-B99aDJy6.js   243.64 kB │ gzip: 77.14 kB
+✓ built in 1.08s

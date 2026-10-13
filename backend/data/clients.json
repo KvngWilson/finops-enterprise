@@ -1,0 +1,122 @@
+[
+  {
+    "clientId": "00000000-0000-4000-8000-000000000001",
+    "companyName": "Maple Ridge Manufacturing",
+    "registrationNumber": "DEMO-REG-00001",
+    "industry": "Manufacturing",
+    "country": "United States",
+    "contactEmail": "operations1@example.com",
+    "contactPhone": "+1 555 010 0000",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000002",
+    "companyName": "Aurora Construction Group",
+    "registrationNumber": "DEMO-REG-00002",
+    "industry": "Construction",
+    "country": "Canada",
+    "contactEmail": "operations2@example.com",
+    "contactPhone": "+1 555 010 0001",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000003",
+    "companyName": "Northern Route Logistics",
+    "registrationNumber": "DEMO-REG-00003",
+    "industry": "Transportation",
+    "country": "Canada",
+    "contactEmail": "operations3@example.com",
+    "contactPhone": "+1 555 010 0002",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000004",
+    "companyName": "Cedar Cloud Technologies",
+    "registrationNumber": "DEMO-REG-00004",
+    "industry": "Technology",
+    "country": "United States",
+    "contactEmail": "operations4@example.com",
+    "contactPhone": "+1 555 010 0003",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000005",
+    "companyName": "Harbour Financial Partners",
+    "registrationNumber": "DEMO-REG-00005",
+    "industry": "Financial Services",
+    "country": "Canada",
+    "contactEmail": "operations5@example.com",
+    "contactPhone": "+1 555 010 0004",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000006",
+    "companyName": "Pinecrest Retail Group",
+    "registrationNumber": "DEMO-REG-00006",
+    "industry": "Retail",
+    "country": "Canada",
+    "contactEmail": "operations6@example.com",
+    "contactPhone": "+1 555 010 0005",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000007",
+    "companyName": "Summit Wholesale Supply",
+    "registrationNumber": "DEMO-REG-00007",
+    "industry": "Wholesale Distribution",
+    "country": "United States",
+    "contactEmail": "operations7@example.com",
+    "contactPhone": "+1 555 010 0006",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000008",
+    "companyName": "Prairie Precision Works",
+    "registrationNumber": "DEMO-REG-00008",
+    "industry": "Manufacturing",
+    "country": "Canada",
+    "contactEmail": "operations8@example.com",
+    "contactPhone": "+1 555 010 0007",
+    "status": "Active",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000009",
+    "companyName": "Atlantic Infrastructure",
+    "registrationNumber": "DEMO-REG-00009",
+    "industry": "Construction",
+    "country": "Canada",
+    "contactEmail": "operations9@example.com",
+    "contactPhone": "+1 555 010 0008",
+    "status": "Inactive",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  },
+  {
+    "clientId": "00000000-0000-4000-8000-000000000010",
+    "companyName": "Great Lakes Transport",
+    "registrationNumber": "DEMO-REG-00010",
+    "industry": "Transportation",
+    "country": "United States",
+    "contactEmail": "operations10@example.com",
+    "contactPhone": "+1 555 010 0009",
+    "status": "Suspended",
+    "createdAt": "2026-09-01T12:00:00.000Z",
+    "updatedAt": "2026-09-01T12:00:00.000Z"
+  }
+]

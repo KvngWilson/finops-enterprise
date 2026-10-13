@@ -1,0 +1,34 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> finops-enterprise-backend@1.0.0 test
+> node --test test/*.test.js
+
+✔ demonstration dataset quantities, fields and relationships (13.49767ms)
+✔ health returns current timestamp and configured CORS (24.584994ms)
+✔ client creation, editing, profile and persistence after real server restart (28.464397ms)
+✔ case-insensitive duplicate registration preserves original data (5.708931ms)
+✔ validation, immutable fields and nonexistent client (33.631623ms)
+✔ client combined filters, partial search and pagination validation (13.0947ms)
+✔ account creation requires an active existing client and integer cents (36.210503ms)
+✔ account combined filters include corporate ownership (4.583992ms)
+✔ history search, related accounts, read-only restrictions and newest-first order (24.869004ms)
+✔ inclusive UTC dates, combined history filters and invalid date ranges (12.128595ms)
+✔ history reads preserve balances and dashboard totals reflect storage (6.875191ms)
+✔ parallel duplicate requests create exactly one record (27.384319ms)
+✔ parallel distinct registrations retain every write (42.806201ms)
+[STORAGE_ERROR] Unable to read valid clients.json storage.
+[STORAGE_ERROR] Unable to read valid clients.json storage.
+[STORAGE_ERROR] Unable to read valid clients.json storage.
+✔ corrupt and missing files return controlled errors without overwrite (9.515315ms)
+✔ non-array storage and failed business modifications preserve original bytes (2.631231ms)
+✔ empty datasets return zero dashboard metrics (7.437711ms)
+✔ timestamp tie sorting uses transaction identifiers (4.676067ms)
+✔ malformed request JSON returns HTTP 400 (2.783115ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 460.722989

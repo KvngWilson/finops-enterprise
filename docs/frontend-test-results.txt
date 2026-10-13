@@ -1,0 +1,16 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> finops-enterprise-frontend@1.0.0 test
+> node --test test/*.test.js
+
+✔ decimal conversion preserves exact cents (1.030881ms)
+✔ invalid, negative, fractional-cent and unsafe amounts are rejected (0.523282ms)
+✔ formatting keeps cents at safe-integer boundary (12.518227ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 107.920056

@@ -1,0 +1,12 @@
+{
+  "name": "finops-enterprise",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:browser": "node scripts/browser-check.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.55.0"
+  }
+}

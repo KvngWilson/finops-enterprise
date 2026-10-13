@@ -1,0 +1,19 @@
+2026-10-13T02:53:47.758Z
+PASS dashboard totals and five recent transactions
+PASS directory navigation and loaded API records
+PASS combined client search and filters
+PASS registration, confirmation, profile and duplicate-submission lock
+PASS client editing and refreshed profile
+PASS fractional-cent form validation
+PASS account registration, ownership and exact cents display
+PASS client-account relationship
+PASS transaction investigation and related account navigation
+PASS empty transaction search state
+PASS invalid date range error and retry state
+PASS account currency and status filtering
+PASS dashboard refresh after client and account creation
+PASS tablet dashboard layout, navigation and scrollable table
+PASS frontend Not Found route
+PASS failed API loading and successful retry
+PASS visible asynchronous loading state
+PASS no browser runtime errors
