@@ -1,3 +1,4 @@
+import {upgradeRisk} from "./risk.js";
 import {connect,client} from './db.js';import {createApp} from './app.js';
-await connect(); const server=createApp().listen(Number(process.env.PORT||3000),'0.0.0.0');
+await connect(); await upgradeRisk(); const server=createApp().listen(Number(process.env.PORT||3000),'0.0.0.0');
 for(const signal of ['SIGINT','SIGTERM'])process.once(signal,()=>server.close(async()=>{await client.close();process.exit(0);}));

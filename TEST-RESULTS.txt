@@ -1,71 +1,104 @@
 TAP version 13
-# Subtest: safe integer money
-ok 1 - safe integer money
+# Subtest: approval gates, sequential roles, rejection and historical protection
+ok 1 - approval gates, sequential roles, rejection and historical protection # SKIP
   ---
-  duration_ms: 1.539694
+  duration_ms: 0.590679
+  type: 'test'
+  ...
+# Subtest: safe integer money
+ok 2 - safe integer money
+  ---
+  duration_ms: 0.997257
   type: 'test'
   ...
 # Subtest: valid transfer
-ok 2 - valid transfer
+ok 3 - valid transfer
   ---
-  duration_ms: 1.342485
+  duration_ms: 0.919632
   type: 'test'
   ...
 # Subtest: insufficient funds
-ok 3 - insufficient funds
+ok 4 - insufficient funds
   ---
-  duration_ms: 0.21723
+  duration_ms: 0.113647
   type: 'test'
   ...
 # Subtest: reject inactive accounts
-ok 4 - reject inactive accounts
+ok 5 - reject inactive accounts
   ---
-  duration_ms: 0.192533
+  duration_ms: 0.181537
   type: 'test'
   ...
 # Subtest: reject currency mismatch
-ok 5 - reject currency mismatch
+ok 6 - reject currency mismatch
   ---
-  duration_ms: 0.153626
+  duration_ms: 0.104003
   type: 'test'
   ...
 # Subtest: reject overflow
-ok 6 - reject overflow
+ok 7 - reject overflow
   ---
-  duration_ms: 0.144483
+  duration_ms: 0.092776
   type: 'test'
   ...
 # Subtest: reject same account and missing account
-ok 7 - reject same account and missing account
+ok 8 - reject same account and missing account
   ---
-  duration_ms: 0.288715
+  duration_ms: 0.262836
   type: 'test'
   ...
 # Subtest: reject unexpected fields
-ok 8 - reject unexpected fields
+ok 9 - reject unexpected fields
   ---
-  duration_ms: 0.239001
+  duration_ms: 0.260954
   type: 'test'
   ...
 # Subtest: Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances
-ok 9 - Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances # SKIP
+ok 10 - Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances # SKIP
   ---
-  duration_ms: 0.746167
+  duration_ms: 0.535949
   type: 'test'
   ...
-1..9
-# tests 9
+# Subtest: risk evaluation is deterministic for identical inputs and policy
+ok 11 - risk evaluation is deterministic for identical inputs and policy
+  ---
+  duration_ms: 1.215388
+  type: 'test'
+  ...
+# Subtest: amount rules are cumulative and use minor units
+ok 12 - amount rules are cumulative and use minor units
+  ---
+  duration_ms: 0.417014
+  type: 'test'
+  ...
+# Subtest: risk score is capped at 100 and retains raw score
+ok 13 - risk score is capped at 100 and retains raw score
+  ---
+  duration_ms: 0.266062
+  type: 'test'
+  ...
+# Subtest: risk band boundaries have no gaps
+ok 14 - risk band boundaries have no gaps
+  ---
+  duration_ms: 0.163771
+  type: 'test'
+  ...
+# Subtest: activity, balance and non-active client rules record evaluated evidence
+ok 15 - activity, balance and non-active client rules record evaluated evidence
+  ---
+  duration_ms: 0.956116
+  type: 'test'
+  ...
+1..15
+# tests 15
 # suites 0
-# pass 8
+# pass 13
 # fail 0
 # cancelled 0
-# skipped 1
+# skipped 2
 # todo 0
-# duration_ms 99.894117
-All backend and utility JavaScript syntax checks passed.
-frontend/app/page.tsx syntax transpilation passed
-frontend/app/layout.tsx syntax transpilation passed
-frontend/next.config.ts syntax transpilation passed
+# duration_ms 127.155881
 
-Compose YAML parsed successfully; fixture counts 10/20/50.
-Docker, dependency installation, full TypeScript typecheck, browser and MongoDB integration not executed.
+Backend JS syntax: checked.
+Frontend TSX syntax transpilation: checked (not full typecheck).
+Docker, database integration and browser tests: not executed.
