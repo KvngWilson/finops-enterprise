@@ -1,9 +1,10 @@
+import {createHash} from 'node:crypto';
 import {risk} from "./risk.js";
 import {client,accounts,transactions} from './db.js';
 import {fields,id,money,str,choice,metadata,fail,transferRejection,clean} from './domain.js';
-export async function initiate(body,key){
+export async function initiate(body,key,userId){
  fields(body,['sourceAccountId','destinationAccountId','amountMinor','currency','description']);
- key=str(key,'Idempotency-Key',128);
+ key=str(key,'Idempotency-Key',128);if(userId)key=createHash('sha256').update(JSON.stringify([userId,key])).digest('hex');
  const input={sourceAccountId:id(body.sourceAccountId),destinationAccountId:id(body.destinationAccountId),amountMinor:money(body.amountMinor,true),currency:choice(body.currency,'currency',metadata.currencies),description:str(body.description,'description',500)};
  if(input.sourceAccountId===input.destinationAccountId)fail(400,'VALIDATION','Accounts must differ');
  return risk.initiateTransfer({...input,idempotencyKey:key});
