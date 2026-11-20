@@ -1,4 +1,4 @@
-import {randomUUID,createHash} from 'node:crypto';
+import {risk} from "./risk.js";
 import {client,accounts,transactions} from './db.js';
 import {fields,id,money,str,choice,metadata,fail,transferRejection,clean} from './domain.js';
 export async function initiate(body,key){
@@ -6,19 +6,14 @@ export async function initiate(body,key){
  key=str(key,'Idempotency-Key',128);
  const input={sourceAccountId:id(body.sourceAccountId),destinationAccountId:id(body.destinationAccountId),amountMinor:money(body.amountMinor,true),currency:choice(body.currency,'currency',metadata.currencies),description:str(body.description,'description',500)};
  if(input.sourceAccountId===input.destinationAccountId)fail(400,'VALIDATION','Accounts must differ');
- const requestHash=createHash('sha256').update(JSON.stringify(input)).digest('hex');
- const replay=async()=>{const old=await transactions.findOne({idempotencyKey:key},{projection:clean});if(old&&old.requestHash!==requestHash)fail(409,'IDEMPOTENCY_CONFLICT','Key already used with a different request');return old;};
- const old=await replay();if(old)return {record:old,replayed:true};
- const a=await accounts.findOne({accountId:input.sourceAccountId}),b=await accounts.findOne({accountId:input.destinationAccountId});
- if(!a||!b)fail(404,'NOT_FOUND','Account not found');
- const record={...input,transactionId:randomUUID(),referenceNumber:`TXN-${randomUUID()}`,transactionType:'Transfer',status:'Pending',createdAt:new Date().toISOString(),processedAt:null,rejectionReason:null,idempotencyKey:key,requestHash};
- try{await transactions.insertOne({...record});return {record,replayed:false};}catch(e){if(e.code!==11000)throw e;const existing=await replay();if(!existing)throw e;return {record:existing,replayed:true};}
+ return risk.initiateTransfer({...input,idempotencyKey:key});
 }
 export async function processTransfer(transactionId){
  id(transactionId); const session=client.startSession();
  try{return await session.withTransaction(async()=>{
  const t=await transactions.findOne({transactionId},{session,projection:clean});if(!t)fail(404,'NOT_FOUND','Transaction not found');
  if(t.status!=='Pending')return t;
+ await risk.requireApproval(t,session);
  const a=await accounts.findOne({accountId:t.sourceAccountId},{session});const b=await accounts.findOne({accountId:t.destinationAccountId},{session});
  const rejectionReason=transferRejection(t,a,b);const result={status:rejectionReason?'Rejected':'Completed',processedAt:new Date().toISOString(),rejectionReason};
  if(!rejectionReason){

@@ -1,13 +1,14 @@
+import {risk} from "./risk.js";
 import express from 'express';import cors from 'cors';import {randomUUID} from 'node:crypto';
 import {clients,accounts,transactions,db} from './db.js';import {metadata,fields,str,choice,id,money,fail,clean} from './domain.js';import {initiate,processTransfer} from './transfers.js';
 const now=()=>new Date().toISOString();const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 const find=async(c,key,value)=>{const r=await c.findOne({[key]:id(value)},{projection:clean});if(!r)fail(404,'NOT_FOUND','Resource not found');return r;};
-function publicTx(t){const {requestHash,idempotencyKey,...rest}=t;return rest;}
+function publicTx(t){const {_id,requestHash,idempotencyKey,...rest}=t;return rest;}
 async function list(c,q,filter,sort,transform=x=>x){const page=Number(q.page??1),pageSize=Number(q.pageSize??10);if(!Number.isSafeInteger(page)||page<1||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>100||!Number.isSafeInteger((page-1)*pageSize))fail(400,'VALIDATION','Invalid pagination');const total=await c.countDocuments(filter);const data=(await c.find(filter,{projection:clean}).sort(sort).skip((page-1)*pageSize).limit(pageSize).toArray()).map(transform);return {data,pagination:{page,pageSize,total,totalPages:Math.ceil(total/pageSize)}};}
 function filterEnums(q,defs){const f={};for(const [k,opts] of Object.entries(defs))if(q[k]!==undefined)f[k]=choice(q[k],k,opts);return f;}
 const clientFields=['companyName','registrationNumber','industry','country','contactEmail','contactPhone'];
 function validateClient(b,partial=false){const out={};for(const k of clientFields){if(partial&&b[k]===undefined)continue;out[k]=str(b[k],k);if(k==='registrationNumber')out[k]=out[k].toUpperCase();if(k==='industry')choice(out[k],k,metadata.industries);if(k==='country')choice(out[k],k,metadata.countries);if(k==='contactEmail'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out[k]))fail(400,'VALIDATION','Invalid email');}return out;}
-export function createApp(){const app=express();app.use(cors({origin:process.env.FRONTEND_ORIGIN||'http://localhost:8080'}));app.use(express.json({limit:'64kb'}));const r=express.Router();app.use('/api/v1',r);const send=(res,data,status=200)=>res.status(status).json({data});
+export function createApp(){const app=express();app.use(cors({origin:process.env.FRONTEND_ORIGIN||'http://localhost:8080'}));app.use(express.json({limit:'64kb'}));const r=express.Router();app.use('/api/v1',r);r.use((req,res,next)=>{if(Object.values(req.query).some(v=>typeof v!=='string'))fail(400,'VALIDATION','Query parameters must be scalar strings');next();});const send=(res,data,status=200)=>res.status(status).json({data});
  r.get('/health',async(req,res)=>{await db.command({ping:1});res.json({status:'ok',timestamp:now()});});r.get('/metadata',(req,res)=>send(res,metadata));
  r.get('/clients',async(req,res)=>{const q=req.query,f=filterEnums(q,{status:metadata.clientStatuses,industry:metadata.industries});if(q.search){const re={$regex:esc(str(q.search,'search')),$options:'i'};f.$or=[{companyName:re},{registrationNumber:re}];}res.json(await list(clients,q,f,{companyName:1,clientId:1}));});
  r.post('/clients',async(req,res)=>{fields(req.body,clientFields);const d={...validateClient(req.body),clientId:randomUUID(),status:'Active',createdAt:now(),updatedAt:now()};await clients.insertOne({...d});res.location(`/api/v1/clients/${d.clientId}`);send(res,d,201);});
@@ -21,4 +22,20 @@ export function createApp(){const app=express();app.use(cors({origin:process.env
  r.get('/transactions/:id',async(req,res)=>{const d=await find(transactions,'transactionId',req.params.id);send(res,{...publicTx(d),sourceAccount:await find(accounts,'accountId',d.sourceAccountId),destinationAccount:await find(accounts,'accountId',d.destinationAccountId)});});
  r.post('/transactions/:id/process',async(req,res)=>send(res,publicTx(await processTransfer(req.params.id))));
  r.get('/dashboard/summary',async(req,res)=>{const [totalClients,activeClients,totalAccounts,activeAccounts,totalTransactions,counts,recentTransactions]=await Promise.all([clients.countDocuments(),clients.countDocuments({status:'Active'}),accounts.countDocuments(),accounts.countDocuments({status:'Active'}),transactions.countDocuments(),transactions.aggregate([{$group:{_id:'$status',count:{$sum:1}}}]).toArray(),transactions.find({},{projection:clean}).sort({createdAt:-1,transactionId:-1}).limit(5).toArray()]);const statusCounts={Pending:0,Completed:0,Rejected:0};for(const c of counts)statusCounts[c._id]=c.count;send(res,{totalClients,activeClients,totalAccounts,activeAccounts,totalTransactions,pendingTransactions:statusCounts.Pending,completedTransactions:statusCounts.Completed,rejectedTransactions:statusCounts.Rejected,statusCounts,recentTransactions:recentTransactions.map(publicTx)});});
+ r.get('/risk-policies',async(req,res)=>res.json(await risk.listPolicies(req.query)));
+ r.post('/risk-policies',async(req,res)=>send(res,await risk.createPolicy(req.body,req.body.actorId),201));
+ r.get('/risk-policies/:id',async(req,res)=>send(res,await risk.getPolicy(req.params.id)));
+ r.put('/risk-policies/:id',async(req,res)=>send(res,await risk.updatePolicy(req.params.id,req.body,req.body.actorId)));
+ r.post('/risk-policies/:id/activate',async(req,res)=>send(res,await risk.activatePolicy(req.params.id,req.body.actorId)));
+ r.get('/risk-assessments',async(req,res)=>res.json(await risk.listAssessments(req.query)));
+ r.get('/risk-assessments/:id',async(req,res)=>send(res,await risk.getAssessment(req.params.id)));
+ r.get('/risk/dashboard',async(req,res)=>send(res,await risk.dashboard()));
+ r.get('/approval-workflows',async(req,res)=>res.json(await risk.listWorkflows(req.query)));
+ r.get('/approval-workflows/:id',async(req,res)=>send(res,await risk.getWorkflow(req.params.id)));
+ r.get('/approval-workflows/:id/decisions',async(req,res)=>send(res,await risk.decisionsFor(req.params.id)));
+ r.post('/approval-workflows/:id/decisions',async(req,res)=>send(res,await risk.submitDecision(req.params.id,{...req.body,idempotencyKey:req.get('Idempotency-Key')??req.body.idempotencyKey})));
+ r.post('/approval-workflows/:id/escalate',async(req,res)=>send(res,await risk.escalate(req.params.id,{...req.body,idempotencyKey:req.get('Idempotency-Key')??req.body.idempotencyKey})));
+ r.get('/approvals/dashboard',async(req,res)=>send(res,await risk.approvalDashboard()));
+ r.get('/approvals/queue',async(req,res)=>res.json(await risk.listWorkflows({...req.query,queue:'true'})));
+ r.get('/workflow-actors',async(req,res)=>send(res,await risk.listActors()));
  app.use((req,res)=>res.status(404).json({error:{code:'NOT_FOUND',message:'Endpoint not found'}}));app.use((e,req,res,next)=>{if(res.headersSent)return next(e);const status=e.code===11000?409:e.status||500;if(status>=500)console.error(e);res.status(status).json({error:{code:e.code===11000?'DUPLICATE':typeof e.code==='string'?e.code:status===400?'VALIDATION':'SERVER_ERROR',message:status>=500?'Internal server error':e.code===11000?'Duplicate record':e.message}});});return app;}

@@ -1,6 +1,43 @@
-# FinOps Enterprise — Assignment 2
+# FinOps Enterprise — Assignment 3 (incremental)
 
-A standalone Assignment 2 reconstruction of the public Assignment 1 contract. Northbridge Commercial Bank is fictional; do not deploy this educational application with real financial data.
+An incremental extension of the previously delivered Next.js/Express/MongoDB Assignment 2 project, using the uploaded Assignment 3 archive as the reference for risk and approval functionality. Northbridge Commercial Bank is fictional; do not deploy this educational application with real financial data.
+
+## Upgrade an existing Assignment 2 deployment
+
+Back up MongoDB first. Stop the old stack with `docker compose down` (without `-v`), copy the changed files or apply the companion patch from the Assignment 2 project root, and run `docker compose up --build -d` from the same directory. If using a separate directory, specify the original Compose project name with `docker compose -p ORIGINAL_NAME up --build -d` so the existing volume is reused. Do not run both stacks on port 8080. The existing migration remains unchanged; startup creates the risk collections, indexes, defaults and migration marker `assignment-3-risk` before the API listens. Completed and Rejected historical records remain unchanged in financial status; historical Pending records are explicitly protected from execution because they lack a risk assessment. No balances are recalculated. New transactions are assessed automatically. Do not downgrade to Assignment 2 after creating approval-gated transfers, because the old backend does not enforce the new gate.
+
+## Assignment 3 features
+
+- Eight deterministic additive risk rules; 100-point cap; immutable evidence snapshot for every newly initiated transfer.
+- Versioned draft/active/superseded risk policies; currency-specific activation and simulated administrator role.
+- Sequential workflow decisions, escalation, separation of duties, immutable decision records and unique decision idempotency keys.
+- Existing Assignment 2 financial execution engine retained, with an additional authoritative assessment/approval gate in the same MongoDB session. Workflow rejection sets the financial status to Rejected without changing balances.
+- New Next.js risk workspace, assessment and workflow records, dashboard counts, policy creation/edit/activation and actor selector. Policy editing and audit evidence use JSON panels, not the uploaded Vite screens.
+
+| Score | Level | Required stages |
+|---|---|---|
+| 0–24 | Low | None |
+| 25–49 | Medium | Operations Reviewer |
+| 50–74 | High | Operations Reviewer then Senior Reviewer |
+| 75–100 | Critical | Senior Reviewer then Compliance Reviewer |
+
+New collections: `risk_policies`, `risk_assessments`, `approval_policies`, `approval_workflows`, `approval_decisions`, `workflow_actors`, `risk_policy_locks`. Policy versions use `policyKey` as the stable route identifier. The six fictional actors are seeded automatically; choose the role required by the current stage. Actor selection is not authentication.
+
+### New endpoints (prefix `/api/v1`)
+
+| Method | Path |
+|---|---|
+| GET/POST | /risk-policies |
+| GET/PUT | /risk-policies/:id |
+| POST | /risk-policies/:id/activate |
+| GET | /risk-assessments, /risk-assessments/:id |
+| GET | /risk/dashboard |
+| GET | /approval-workflows, /approval-workflows/:id |
+| GET/POST | /approval-workflows/:id/decisions |
+| POST | /approval-workflows/:id/escalate |
+| GET | /approvals/dashboard, /approvals/queue, /workflow-actors |
+
+For a decision, send `Idempotency-Key` and `{ "actorId":"ACTOR-OLIVIA-CHEN", "decision":"Approved", "comments":"Reviewed" }`. Rejection and escalation require comments. A workflow must be fully approved before processing; low risk needs no approval. To demonstrate High risk, use fresh active CAD accounts with source balance 1,000,000.00 and transfer 120,000.00; the three cumulative amount rules score 60. Approve as Olivia Chen, then Daniel Brooks; return to Transactions to process. The original Assignment 2 validation timing is retained: funds, currency, status and overflow are checked at execution, rather than rejecting initiation early as in the uploaded reference.
 
 ## Start
 
@@ -67,10 +104,10 @@ The integration suite creates a disposable database, tests competing debits and 
 2. Register a client; edit its details; create two CAD accounts or use existing active accounts.
 3. Initiate a transfer using their UUIDs (e.g. amount 10.00). Verify Pending and unchanged balances.
 4. Open the transfer and click Process transfer. Verify Completed, timestamp and adjusted balances.
-5. Submit a transfer larger than the source balance, process it and verify Rejected and unchanged balances.
+5. Submit a transfer larger than the source balance, complete any required approval stages, process it and verify Rejected and unchanged balances.
 6. Run integration tests for simultaneous requests, duplicate keys and terminal replay.
 7. Restart the stack and verify records persist.
 
 ## Scope and limitations
 
-This is a reconstructed project, not a patch applied to the original source. Dashboard, client/account forms, search, filters and linked detail panels are implemented; UI design and navigation are not identical to Assignment 1. No production authentication, authorization, audit ledger, TLS, database authentication, backup or multi-node HA is provided. Browser idempotency keys survive retries within a form session, not reloads. Dependencies are semver ranges; npm lockfiles should be generated and committed after installation. Docker and full browser validation must be run on a Docker-capable machine. See TEST-RESULTS.txt for checks actually executed.
+This is a patch applied to the previously generated Assignment 2 reconstruction, not to the public GitHub repository. Dashboard, client/account forms, search, filters and linked detail panels are implemented; UI design and navigation are not identical to Assignment 1. No production authentication, authorization, audit ledger, TLS, database authentication, backup or multi-node HA is provided. Browser idempotency keys survive retries within a form session, not reloads. Dependencies are semver ranges; npm lockfiles should be generated and committed after installation. Docker and full browser validation must be run on a Docker-capable machine. See TEST-RESULTS.txt for checks actually executed.
