@@ -1,0 +1,51 @@
+services:
+  mongo:
+    image: mongo:7.0
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes: ["mongodb_data:/data/db"]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval 'try { if (db.hello().isWritablePrimary) quit(0); } catch(e) {} try { rs.initiate({_id:\"rs0\",members:[{_id:0,host:\"mongo:27017\"}]}); } catch(e) {} quit(1)'"]
+      interval: 5s
+      timeout: 10s
+      retries: 40
+  migrate:
+    build: ./backend
+    command: ["node", "src/migrate.js"]
+    environment: &db_env
+      MONGODB_URI: mongodb://mongo:27017/?replicaSet=rs0
+      MONGODB_DATABASE: finops
+    depends_on:
+      mongo:
+        condition: service_healthy
+  backend:
+    build: ./backend
+    environment:
+      <<: *db_env
+      PORT: 3000
+      FRONTEND_ORIGIN: http://localhost:8080
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  frontend:
+    build: ./frontend
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  nginx:
+    image: nginx:alpine
+    ports: ["8080:80"]
+    volumes: ["./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro"]
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+volumes:
+  mongodb_data:

@@ -1,47 +1,24 @@
-import express from "express";
-import cors from "cors";
-import { config } from "./config.js";
-import { createRepositories } from "./repositories/index.js";
-import { createServices } from "./services/index.js";
-import { createControllers } from "./controllers/index.js";
-import { createRoutes } from "./routes/index.js";
-export function createApp(options = {}) {
-  const settings = { ...config, ...options };
-  const app = express();
-  app.disable("x-powered-by");
-  app.use(cors({ origin: settings.frontendOrigin }));
-  app.use(express.json({ limit: "64kb" }));
-  app.use(
-    "/api/v1",
-    createRoutes(
-      createControllers(
-        createServices(createRepositories(settings.dataDirectory)),
-      ),
-    ),
-  );
-  app.use((req, res) =>
-    res
-      .status(404)
-      .json({ error: { code: "NOT_FOUND", message: "Endpoint not found." } }),
-  );
-  app.use((err, req, res, next) => {
-    const malformed = err.type === "entity.parse.failed";
-    const status = malformed ? 400 : (err.status ?? 500);
-    if (status >= 500)
-      console.error(`[${err.code ?? "INTERNAL_ERROR"}] ${err.message}`);
-    res
-      .status(status)
-      .json({
-        error: {
-          code: malformed ? "INVALID_JSON" : (err.code ?? "INTERNAL_ERROR"),
-          message: malformed
-            ? "Request body is not valid JSON."
-            : status >= 500
-              ? "Storage or server operation failed. Check the backend log and data files."
-              : err.message,
-          ...(err.fields ? { fields: err.fields } : {}),
-        },
-      });
-  });
-  return app;
-}
+import express from 'express';import cors from 'cors';import {randomUUID} from 'node:crypto';
+import {clients,accounts,transactions,db} from './db.js';import {metadata,fields,str,choice,id,money,fail,clean} from './domain.js';import {initiate,processTransfer} from './transfers.js';
+const now=()=>new Date().toISOString();const esc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const find=async(c,key,value)=>{const r=await c.findOne({[key]:id(value)},{projection:clean});if(!r)fail(404,'NOT_FOUND','Resource not found');return r;};
+function publicTx(t){const {requestHash,idempotencyKey,...rest}=t;return rest;}
+async function list(c,q,filter,sort,transform=x=>x){const page=Number(q.page??1),pageSize=Number(q.pageSize??10);if(!Number.isSafeInteger(page)||page<1||!Number.isSafeInteger(pageSize)||pageSize<1||pageSize>100||!Number.isSafeInteger((page-1)*pageSize))fail(400,'VALIDATION','Invalid pagination');const total=await c.countDocuments(filter);const data=(await c.find(filter,{projection:clean}).sort(sort).skip((page-1)*pageSize).limit(pageSize).toArray()).map(transform);return {data,pagination:{page,pageSize,total,totalPages:Math.ceil(total/pageSize)}};}
+function filterEnums(q,defs){const f={};for(const [k,opts] of Object.entries(defs))if(q[k]!==undefined)f[k]=choice(q[k],k,opts);return f;}
+const clientFields=['companyName','registrationNumber','industry','country','contactEmail','contactPhone'];
+function validateClient(b,partial=false){const out={};for(const k of clientFields){if(partial&&b[k]===undefined)continue;out[k]=str(b[k],k);if(k==='registrationNumber')out[k]=out[k].toUpperCase();if(k==='industry')choice(out[k],k,metadata.industries);if(k==='country')choice(out[k],k,metadata.countries);if(k==='contactEmail'&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(out[k]))fail(400,'VALIDATION','Invalid email');}return out;}
+export function createApp(){const app=express();app.use(cors({origin:process.env.FRONTEND_ORIGIN||'http://localhost:8080'}));app.use(express.json({limit:'64kb'}));const r=express.Router();app.use('/api/v1',r);const send=(res,data,status=200)=>res.status(status).json({data});
+ r.get('/health',async(req,res)=>{await db.command({ping:1});res.json({status:'ok',timestamp:now()});});r.get('/metadata',(req,res)=>send(res,metadata));
+ r.get('/clients',async(req,res)=>{const q=req.query,f=filterEnums(q,{status:metadata.clientStatuses,industry:metadata.industries});if(q.search){const re={$regex:esc(str(q.search,'search')),$options:'i'};f.$or=[{companyName:re},{registrationNumber:re}];}res.json(await list(clients,q,f,{companyName:1,clientId:1}));});
+ r.post('/clients',async(req,res)=>{fields(req.body,clientFields);const d={...validateClient(req.body),clientId:randomUUID(),status:'Active',createdAt:now(),updatedAt:now()};await clients.insertOne({...d});res.location(`/api/v1/clients/${d.clientId}`);send(res,d,201);});
+ r.get('/clients/:id',async(req,res)=>{const d=await find(clients,'clientId',req.params.id);send(res,{...d,accounts:await accounts.find({clientId:d.clientId},{projection:clean}).toArray()});});
+ r.patch('/clients/:id',async(req,res)=>{fields(req.body,[...clientFields.filter(k=>k!=='registrationNumber'),'status']);const d=validateClient(req.body,true);if(req.body.status!==undefined)d.status=choice(req.body.status,'status',metadata.clientStatuses);const result=await clients.findOneAndUpdate({clientId:id(req.params.id)},{$set:{...d,updatedAt:now()}},{returnDocument:'after',projection:clean});if(!result)fail(404,'NOT_FOUND','Client not found');send(res,result);});
+ r.get('/accounts',async(req,res)=>{const q=req.query,f=filterEnums(q,{accountType:metadata.accountTypes,currency:metadata.currencies,status:metadata.accountStatuses});if(q.clientId)f.clientId=id(q.clientId);res.json(await list(accounts,q,f,{createdAt:-1,accountId:-1}));});
+ r.post('/accounts',async(req,res)=>{const b=req.body;fields(b,['clientId','accountType','currency','balanceMinor']);const owner=await find(clients,'clientId',b.clientId);if(owner.status!=='Active')fail(409,'INACTIVE_OWNER','Client is not active');const d={clientId:owner.clientId,accountId:randomUUID(),accountNumber:`SIM-${randomUUID()}`,accountType:choice(b.accountType,'accountType',metadata.accountTypes),currency:choice(b.currency,'currency',metadata.currencies),balanceMinor:money(b.balanceMinor),status:'Active',createdAt:now()};await accounts.insertOne({...d});res.location(`/api/v1/accounts/${d.accountId}`);send(res,d,201);});
+ r.get('/accounts/:id',async(req,res)=>{const d=await find(accounts,'accountId',req.params.id);send(res,{...d,client:await find(clients,'clientId',d.clientId)});});
+ r.get('/transactions',async(req,res)=>{const q=req.query,f=filterEnums(q,{status:metadata.transactionStatuses});if(q.sourceAccountId)f.sourceAccountId=id(q.sourceAccountId);if(q.accountId){const a=id(q.accountId);f.$or=[{sourceAccountId:a},{destinationAccountId:a}];}if(q.search)f.referenceNumber={$regex:esc(str(q.search,'search')),$options:'i'};for(const k of ['from','to'])if(q[k]!==undefined){const v=q[k];if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(v)||!Number.isFinite(Date.parse(v))||new Date(v).toISOString().slice(0,10)!==v)fail(400,'VALIDATION','Invalid date');f.createdAt??={};f.createdAt[k==='from'?'$gte':'$lte']=v+(k==='from'?'T00:00:00.000Z':'T23:59:59.999Z');}if(q.from&&q.to&&q.from>q.to)fail(400,'VALIDATION','Reversed date range');res.json(await list(transactions,q,f,{createdAt:-1,transactionId:-1},publicTx));});
+ r.post('/transactions',async(req,res)=>{const {record,replayed}=await initiate(req.body,req.get('Idempotency-Key'));res.location(`/api/v1/transactions/${record.transactionId}`);send(res,publicTx(record),replayed?200:201);});
+ r.get('/transactions/:id',async(req,res)=>{const d=await find(transactions,'transactionId',req.params.id);send(res,{...publicTx(d),sourceAccount:await find(accounts,'accountId',d.sourceAccountId),destinationAccount:await find(accounts,'accountId',d.destinationAccountId)});});
+ r.post('/transactions/:id/process',async(req,res)=>send(res,publicTx(await processTransfer(req.params.id))));
+ r.get('/dashboard/summary',async(req,res)=>{const [totalClients,activeClients,totalAccounts,activeAccounts,totalTransactions,counts,recentTransactions]=await Promise.all([clients.countDocuments(),clients.countDocuments({status:'Active'}),accounts.countDocuments(),accounts.countDocuments({status:'Active'}),transactions.countDocuments(),transactions.aggregate([{$group:{_id:'$status',count:{$sum:1}}}]).toArray(),transactions.find({},{projection:clean}).sort({createdAt:-1,transactionId:-1}).limit(5).toArray()]);const statusCounts={Pending:0,Completed:0,Rejected:0};for(const c of counts)statusCounts[c._id]=c.count;send(res,{totalClients,activeClients,totalAccounts,activeAccounts,totalTransactions,pendingTransactions:statusCounts.Pending,completedTransactions:statusCounts.Completed,rejectedTransactions:statusCounts.Rejected,statusCounts,recentTransactions:recentTransactions.map(publicTx)});});
+ app.use((req,res)=>res.status(404).json({error:{code:'NOT_FOUND',message:'Endpoint not found'}}));app.use((e,req,res,next)=>{if(res.headersSent)return next(e);const status=e.code===11000?409:e.status||500;if(status>=500)console.error(e);res.status(status).json({error:{code:e.code===11000?'DUPLICATE':typeof e.code==='string'?e.code:status===400?'VALIDATION':'SERVER_ERROR',message:status>=500?'Internal server error':e.code===11000?'Duplicate record':e.message}});});return app;}

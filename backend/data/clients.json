@@ -85,7 +85,7 @@
   },
   {
     "clientId": "00000000-0000-4000-8000-000000000008",
-    "companyName": "Prairie Precision Works",
+    "companyName": "Demo Technology Group",
     "registrationNumber": "DEMO-REG-00008",
     "industry": "Manufacturing",
     "country": "Canada",
@@ -97,7 +97,7 @@
   },
   {
     "clientId": "00000000-0000-4000-8000-000000000009",
-    "companyName": "Atlantic Infrastructure",
+    "companyName": "Demo Inactive Company",
     "registrationNumber": "DEMO-REG-00009",
     "industry": "Construction",
     "country": "Canada",
@@ -109,7 +109,7 @@
   },
   {
     "clientId": "00000000-0000-4000-8000-000000000010",
-    "companyName": "Great Lakes Transport",
+    "companyName": "Demo Suspended Company",
     "registrationNumber": "DEMO-REG-00010",
     "industry": "Transportation",
     "country": "United States",

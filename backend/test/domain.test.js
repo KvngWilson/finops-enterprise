@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {money,transferRejection,fields} from '../src/domain.js';
+const a={accountId:'a',status:'Active',currency:'CAD',balanceMinor:100},b={...a,accountId:'b',balanceMinor:0},t={amountMinor:100,currency:'CAD'};
+test('safe integer money',()=>{for(const n of [-1,0.1,NaN,Infinity,Number.MAX_SAFE_INTEGER+1,'100'])assert.throws(()=>money(n));assert.equal(money(0),0);assert.throws(()=>money(0,true));});
+test('valid transfer',()=>assert.equal(transferRejection(t,a,b),null));
+test('insufficient funds',()=>assert.equal(transferRejection({...t,amountMinor:101},a,b),'Insufficient funds'));
+test('reject inactive accounts',()=>assert.equal(transferRejection(t,a,{...b,status:'Frozen'}),'Both accounts must be active'));
+test('reject currency mismatch',()=>assert.equal(transferRejection(t,a,{...b,currency:'USD'}),'Currency mismatch'));
+test('reject overflow',()=>assert.equal(transferRejection(t,a,{...b,balanceMinor:Number.MAX_SAFE_INTEGER}),'Destination balance overflow'));
+test('reject same account and missing account',()=>{assert.equal(transferRejection(t,a,a),'Accounts must differ');assert.equal(transferRejection(t,a,null),'Account not found')});
+test('reject unexpected fields',()=>assert.throws(()=>fields({status:'Completed'},['description'])));
