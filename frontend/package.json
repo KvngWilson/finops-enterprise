@@ -1,1 +1,29 @@
-{"name":"finops-ui","private":true,"scripts":{"dev":"next dev -p 8080","build":"next build","start":"next start -H 0.0.0.0 -p 8080","typecheck":"tsc --noEmit"},"dependencies":{"next":"^16.0.0","react":"^19.0.0","react-dom":"^19.0.0"},"devDependencies":{"typescript":"^5.9.0","@types/node":"^22.0.0","@types/react":"^19.0.0","@types/react-dom":"^19.0.0"}}
+{
+  "name": "finops-ui",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 8080",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 8080",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "screenshots": "playwright test --grep \"capture required screens\""
+  },
+  "dependencies": {
+    "next": "^16.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@playwright/test": "^1.56.0",
+    "vitest": "^3.2.0",
+    "jsdom": "^26.1.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/dom": "^10.4.0"
+  }
+}
