@@ -1,104 +1,146 @@
+Assignment 4 verification — executed locally
+
+
+> test
+> node --test
+
 TAP version 13
 # Subtest: approval gates, sequential roles, rejection and historical protection
 ok 1 - approval gates, sequential roles, rejection and historical protection # SKIP
   ---
-  duration_ms: 0.590679
+  duration_ms: 0.528749
+  type: 'test'
+  ...
+# Subtest: HTTP authentication, ownership, revocation, refresh replay, suspended user and audit
+ok 2 - HTTP authentication, ownership, revocation, refresh replay, suspended user and audit # SKIP
+  ---
+  duration_ms: 0.69178
   type: 'test'
   ...
 # Subtest: safe integer money
-ok 2 - safe integer money
+ok 3 - safe integer money
   ---
-  duration_ms: 0.997257
+  duration_ms: 1.029999
   type: 'test'
   ...
 # Subtest: valid transfer
-ok 3 - valid transfer
+ok 4 - valid transfer
   ---
-  duration_ms: 0.919632
+  duration_ms: 2.26557
   type: 'test'
   ...
 # Subtest: insufficient funds
-ok 4 - insufficient funds
+ok 5 - insufficient funds
   ---
-  duration_ms: 0.113647
+  duration_ms: 0.369665
   type: 'test'
   ...
 # Subtest: reject inactive accounts
-ok 5 - reject inactive accounts
+ok 6 - reject inactive accounts
   ---
-  duration_ms: 0.181537
+  duration_ms: 0.107168
   type: 'test'
   ...
 # Subtest: reject currency mismatch
-ok 6 - reject currency mismatch
+ok 7 - reject currency mismatch
   ---
-  duration_ms: 0.104003
+  duration_ms: 0.091025
   type: 'test'
   ...
 # Subtest: reject overflow
-ok 7 - reject overflow
+ok 8 - reject overflow
   ---
-  duration_ms: 0.092776
+  duration_ms: 0.258421
   type: 'test'
   ...
 # Subtest: reject same account and missing account
-ok 8 - reject same account and missing account
+ok 9 - reject same account and missing account
   ---
-  duration_ms: 0.262836
+  duration_ms: 0.177772
   type: 'test'
   ...
 # Subtest: reject unexpected fields
-ok 9 - reject unexpected fields
+ok 10 - reject unexpected fields
   ---
-  duration_ms: 0.260954
+  duration_ms: 0.137242
   type: 'test'
   ...
 # Subtest: Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances
-ok 10 - Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances # SKIP
+ok 11 - Mongo replica set HTTP workflow: idempotency, competing debits, terminal replay, migration-independent balances # SKIP
   ---
-  duration_ms: 0.535949
+  duration_ms: 0.530059
   type: 'test'
   ...
 # Subtest: risk evaluation is deterministic for identical inputs and policy
-ok 11 - risk evaluation is deterministic for identical inputs and policy
+ok 12 - risk evaluation is deterministic for identical inputs and policy
   ---
-  duration_ms: 1.215388
+  duration_ms: 1.442579
   type: 'test'
   ...
 # Subtest: amount rules are cumulative and use minor units
-ok 12 - amount rules are cumulative and use minor units
+ok 13 - amount rules are cumulative and use minor units
   ---
-  duration_ms: 0.417014
+  duration_ms: 0.224219
   type: 'test'
   ...
 # Subtest: risk score is capped at 100 and retains raw score
-ok 13 - risk score is capped at 100 and retains raw score
+ok 14 - risk score is capped at 100 and retains raw score
   ---
-  duration_ms: 0.266062
+  duration_ms: 0.214505
   type: 'test'
   ...
 # Subtest: risk band boundaries have no gaps
-ok 14 - risk band boundaries have no gaps
+ok 15 - risk band boundaries have no gaps
   ---
-  duration_ms: 0.163771
+  duration_ms: 0.31328
   type: 'test'
   ...
 # Subtest: activity, balance and non-active client rules record evaluated evidence
-ok 15 - activity, balance and non-active client rules record evaluated evidence
+ok 16 - activity, balance and non-active client rules record evaluated evidence
   ---
-  duration_ms: 0.956116
+  duration_ms: 0.234304
   type: 'test'
   ...
-1..15
-# tests 15
+# Subtest: password hashes are salted and verified without plaintext
+ok 17 - password hashes are salted and verified without plaintext
+  ---
+  duration_ms: 218.019207
+  type: 'test'
+  ...
+# Subtest: eight system roles and no administrator or manager approval privilege
+ok 18 - eight system roles and no administrator or manager approval privilege
+  ---
+  duration_ms: 0.861876
+  type: 'test'
+  ...
+# Subtest: mandatory approval role and stage restrictions
+ok 19 - mandatory approval role and stage restrictions
+  ---
+  duration_ms: 0.216908
+  type: 'test'
+  ...
+# Subtest: refresh credential digest is deterministic and secrets are random
+ok 20 - refresh credential digest is deterministic and secrets are random
+  ---
+  duration_ms: 0.679678
+  type: 'test'
+  ...
+# Subtest: mandatory medium stage and custom roles cannot grant approval authority
+ok 21 - mandatory medium stage and custom roles cannot grant approval authority
+  ---
+  duration_ms: 0.524541
+  type: 'test'
+  ...
+1..21
+# tests 21
 # suites 0
-# pass 13
+# pass 18
 # fail 0
 # cancelled 0
-# skipped 2
+# skipped 3
 # todo 0
-# duration_ms 127.155881
+# duration_ms 344.029165
 
-Backend JS syntax: checked.
-Frontend TSX syntax transpilation: checked (not full typecheck).
-Docker, database integration and browser tests: not executed.
+Static checks: all backend .js files passed node --check; TS/TSX transpilation diagnostics 0 (syntax only); Compose YAML, Keycloak realm JSON and Postman collection JSON parsed.
+
+Not executed: npm dependency installation failed with EAI_AGAIN registry.npmjs.org. Docker is not installed. All 3 MongoDB integration suites, frontend component tests, full TypeScript type check, Next.js production build, Keycloak/Google callbacks, SMTP, browser E2E and screenshots are pending local execution.

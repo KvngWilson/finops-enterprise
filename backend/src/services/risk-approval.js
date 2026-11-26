@@ -56,6 +56,7 @@ function validateThresholds(thresholds) {
       fail(400,"INVALID_POLICY","Thresholds must cover 0–100 without gaps or overlaps.");
     next=t.max+1;
   }
+  if(sorted.some((t,i)=>t.min!==DEFAULT_THRESHOLDS[i].min||t.max!==DEFAULT_THRESHOLDS[i].max))fail(400,"INVALID_POLICY","Assignment 4 fixes mandatory risk bands at 0–24, 25–49, 50–74, 75–100.");
   if(next!==101) fail(400,"INVALID_POLICY","Thresholds must cover the complete 0–100 score range.");
 }
 function validateRules(rules) {
@@ -75,7 +76,7 @@ function stageList(level, routes=APPROVAL_STAGES) {
   const roles=routes[level]??APPROVAL_STAGES[level]??[];
   if(!Array.isArray(roles)) fail(500,"INVALID_APPROVAL_POLICY",`Approval route for ${level} must be an array.`);
   const expectedStages={Low:0,Medium:1,High:2,Critical:2};
-  if(roles.length!==expectedStages[level]) fail(500,"INVALID_APPROVAL_POLICY",`Approval route for ${level} must contain ${expectedStages[level]} stage(s).`);
+  if(roles.length!==expectedStages[level]||roles.some((r,i)=>r!==APPROVAL_STAGES[level][i])) fail(500,"INVALID_APPROVAL_POLICY",`Approval route for ${level} must contain ${expectedStages[level]} stage(s).`);
   const validRoles=["OperationsReviewer","SeniorReviewer","ComplianceReviewer"];
   if(roles.some(role=>!validRoles.includes(role))) fail(500,"INVALID_APPROVAL_POLICY",`Approval route for ${level} contains an unsupported role.`);
   return roles.map((role,i)=>({stageNumber:i+1,requiredRole:role,status:i===0?"Pending":"Waiting"}));
@@ -211,8 +212,8 @@ export function createRiskApprovalService(database) {
     }); } finally { await session.endSession(); }
     return policies.findOne({_id:p._id});
   }
-  async function actor(actorId) { const a=await actors.findOne({actorId,active:true}); if(!a) fail(403,"INVALID_ACTOR","A valid active seeded workflow actor is required."); return a; }
-  async function admin(actorId) { const a=await actor(actorId); if(a.role!=="PolicyAdministrator") fail(403,"FORBIDDEN","Policy Administrator role is required."); return a; }
+  async function actor(actorId,requiredRole) { const u=await db.collection('users').findOne({_id:actorId,status:'Active'}); const map={'System Administrator':'PolicyAdministrator','Operations Reviewer':'OperationsReviewer','Senior Reviewer':'SeniorReviewer','Compliance Reviewer':'ComplianceReviewer'};const authorized=u?.roles.map(r=>map[r]).filter(Boolean)||[];const role=requiredRole?authorized.find(r=>r===requiredRole):authorized[0];const a=role?{actorId,name:u.firstName+' '+u.lastName,role}:null; if(!a) fail(403,"INVALID_ACTOR","An active authenticated user with the required workflow role is required."); return a; }
+  async function admin(actorId) { const a=await actor(actorId,"PolicyAdministrator"); if(a.role!=="PolicyAdministrator") fail(403,"FORBIDDEN","Policy Administrator role is required."); return a; }
 
   async function initiateTransfer(body) {
     validateTransfer(body);
@@ -277,7 +278,7 @@ export function createRiskApprovalService(database) {
     if(comments.length>1000) fail(400,"INVALID_DECISION","Comments must not exceed 1000 characters.");
     if(decision==="Rejected"&&(!comments||!comments.trim())) fail(400,"REJECTION_REASON_REQUIRED","Rejection must include a reason.");
     if(decision==="Escalated"&&(!comments||!comments.trim())) fail(400,"ESCALATION_REASON_REQUIRED","Escalation must include a reason.");
-    const a=await actor(actorId);
+    const workflowSnapshot=await workflows.findOne({workflowId});const historical=await decisions.findOne({workflowId,idempotencyKey,actorId});const a=await actor(actorId,historical?.actorRole??workflowSnapshot?.requiredStages.find(s=>s.stageNumber===workflowSnapshot.currentStage)?.requiredRole);
     const session=db.client.startSession(); let output;
     try { await session.withTransaction(async()=>{
       const duplicate=await decisions.findOne({workflowId,idempotencyKey},{session});
@@ -290,8 +291,8 @@ export function createRiskApprovalService(database) {
       if(!["Pending","InReview","Escalated"].includes(w.status)) fail(409,"WORKFLOW_CLOSED","Workflow no longer accepts decisions.");
       const stage=w.requiredStages.find(s=>s.stageNumber===w.currentStage);
       if(!stage||!["Pending","InReview"].includes(stage.status)) fail(409,"INVALID_STAGE","There is no actionable stage.");
-      if(stage.requiredRole!==a.role) fail(409,"ROLE_MISMATCH",`Current stage requires ${stage.requiredRole}.`);
-      const prior=await decisions.findOne({workflowId,actorId},{session});
+      if(stage.requiredRole!==a.role) fail(403,"ROLE_MISMATCH",`Current stage requires ${stage.requiredRole}.`);
+      const prior=await decisions.findOne({workflowId,actorId,decision:{$in:["Approved","Rejected"]}},{session});
       if(prior) fail(409,"ACTOR_ALREADY_REVIEWED","A reviewer may decide only once per workflow.");
       if(decision==="Escalated") {
         const allowedEscalations={OperationsReviewer:["SeniorReviewer"],SeniorReviewer:["ComplianceReviewer"],ComplianceReviewer:[]};
@@ -299,7 +300,7 @@ export function createRiskApprovalService(database) {
         if(!allowedEscalations[a.role]?.includes(destination)) fail(400,"INVALID_ESCALATION","Escalation must move to the next higher review role.");
         const record={decisionId:randomUUID(),workflowId,transactionId:w.transactionId,stageNumber:w.currentStage,actorId,actorRole:a.role,decision:"Escalated",comments:String(comments).slice(0,1000),destinationRole:destination,decidedAt:iso(),idempotencyKey};
         await decisions.insertOne(record,{session});
-        const escalatedStages=w.requiredStages.map(s=>s.stageNumber===w.currentStage?{...s,requiredRole:destination,status:"Pending"}:s);
+        const escalatedStages=w.requiredStages.map(s=>s.stageNumber===w.currentStage?{...s,status:"Pending"}:s);
         const workflowUpdate=await workflows.updateOne({workflowId,currentStage:w.currentStage,status:w.status},{$set:{status:"Escalated",requiredStages:escalatedStages,updatedAt:iso(),escalatedTo:destination},$push:{escalations:{actorId,reason:comments,destinationRole:destination,createdAt:record.decidedAt}}},{session});
         if(workflowUpdate.matchedCount!==1) fail(409,"WORKFLOW_CONFLICT","Another request changed this workflow before escalation.");
         const txUpdate=await txs.updateOne({transactionId:w.transactionId},{$set:{approvalStatus:"Escalated",updatedAt:iso()}},{session});

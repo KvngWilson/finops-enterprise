@@ -1,0 +1,9 @@
+import {afterEach,describe,expect,it,vi} from 'vitest';
+import {cleanup,fireEvent,render,screen,waitFor} from '@testing-library/react';
+import {AuthGate} from '../app/security';
+const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+afterEach(()=>{cleanup();vi.unstubAllGlobals();});
+describe('FinOps authentication UI',()=>{
+ it('renders a real sign-in form, external provider links and mode selector',async()=>{vi.stubGlobal('fetch',vi.fn(async()=>json({},401)));render(<AuthGate>{()=> <div>Protected</div>}</AuthGate>);expect(await screen.findByRole('heading',{name:'Sign in'})).toBeTruthy();expect(screen.getByLabelText('Authentication mode')).toBeTruthy();expect(screen.getByText('Continue with Keycloak').getAttribute('href')).toBe('/api/auth/keycloak');expect(screen.getByText('Continue with Google').getAttribute('href')).toBe('/api/auth/google');expect(screen.queryByText('Protected')).toBeNull();});
+ it('submits local credentials and renders the authenticated portal',async()=>{const mock=vi.fn(async(url:string)=>url.endsWith('/session/login')?json({user:{id:'test',email:'test@example.com',roles:['Customer'],permissions:['accounts.own.read'],firstName:'Test',lastName:'User',linkedProviders:['local']},csrfToken:'test-csrf'}):json({},401));vi.stubGlobal('fetch',mock);render(<AuthGate>{u=><div>Protected {u.firstName}</div>}</AuthGate>);await screen.findByRole('heading',{name:'Sign in'});fireEvent.change(screen.getByLabelText('Email'),{target:{value:'test@example.com'}});fireEvent.change(screen.getByLabelText('Password'),{target:{value:'TestPassword123!'}});fireEvent.click(screen.getByRole('button',{name:'Sign in'}));await waitFor(()=>expect(screen.getByText('Protected Test')).toBeTruthy());expect(mock.mock.calls.some(([url])=>url.endsWith('/session/login'))).toBe(true);});
+});
